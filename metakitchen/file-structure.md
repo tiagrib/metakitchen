@@ -1,8 +1,11 @@
 # File Structure
 
+After running `metak install` in your project, the following structure is created:
+
 ```
-meta-repo/
+my-project/
 ├── AGENTS.md                        ← shared agent instructions (all AI agents read this)
+├── CUSTOM.md                        ← project-specific custom instructions (never overwritten)
 ├── meta.code-workspace              ← open this in VS Code
 ├── GEMINI.md                        ← Gemini CLI pointer to AGENTS.md
 ├── .claude/CLAUDE.md                ← Claude Code → AGENTS.md
@@ -12,28 +15,26 @@ meta-repo/
 ├── .clinerules                      ← Cline → AGENTS.md
 ├── .roo/rules/README.md             ← Roo Code → AGENTS.md
 ├── .junie/guidelines.md             ← JetBrains Junie → AGENTS.md
-│
-├── metakitchen/                     ← MetaKitchen documentation (this folder)
-│   ├── README.md                    ← index
-│   ├── file-structure.md            ← this file
-│   ├── usage.md
-│   ├── configuration.md
-│   └── tips.md
+├── .amazonq/rules/README.md         ← Amazon Q Developer → AGENTS.md
 │
 ├── metak-shared/                    ← read-only shared context
 │   ├── architecture.md              ← system-level architecture overview and ADRs
-│   ├── api-contracts/               ← OpenAPI specs, protobuf definitions, shared schemas
 │   ├── coding-standards.md          ← language-specific conventions, linting rules
-│   └── glossary.md                  ← domain terminology
+│   ├── glossary.md                  ← domain terminology
+│   └── templates/                   ← templates used by `metak add`
+│       ├── AGENTS.md.template
+│       └── CUSTOM.md.template
 │
 ├── metak-orchestrator/              ← orchestrator agent workspace
 │   ├── AGENTS.md                    ← orchestrator-specific instructions
+│   ├── CUSTOM.md                    ← orchestrator-specific custom instructions
 │   ├── TASKS.md                     ← task breakdown (orchestrator writes, workers read)
 │   └── STATUS.md                    ← execution status updated by workers
 │
 ├── repo-a/                          ← sub-repo (e.g. frontend)
 │   ├── .git/
 │   ├── AGENTS.md                    ← repo-specific agent instructions
+│   ├── CUSTOM.md                    ← repo-specific custom instructions
 │   └── ...
 │
 ├── repo-b/                          ← sub-repo (e.g. backend)
@@ -53,7 +54,11 @@ Entry point for VS Code. Contains workspace folder definitions, shared settings,
 
 ### `AGENTS.md` (root level and per-repo)
 
-Shared agent instructions that any AI coding agent should read. Contains the meta-repo structure, rules, and coding standards. Each sub-repo can have its own `AGENTS.md` for repo-specific instructions. Agent-specific files (e.g. `.claude/CLAUDE.md`) should just point here.
+Shared agent instructions that any AI coding agent should read. Contains the project structure, rules, and coding standards. Each sub-repo can have its own `AGENTS.md` for repo-specific instructions. Agent-specific files (e.g. `.claude/CLAUDE.md`) just point here.
+
+### `CUSTOM.md` (root level and per-repo)
+
+Project-specific or repo-specific custom instructions. These files are **never overwritten** by `metak install --force` or `metak add` — they are yours to customize freely.
 
 ### `metak-shared/`
 

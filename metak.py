@@ -338,8 +338,9 @@ def cmd_add(args):
 
     if not folder_path.exists():
         print("Error: '{}' does not exist.".format(folder_name))
-        print("Add the git submodule first:")
+        print("Create the folder first, e.g.:")
         print("  git submodule add <url> {}".format(folder_name))
+        print("  or: mkdir {}".format(folder_name))
         sys.exit(1)
 
     if not folder_path.is_dir():

@@ -2,7 +2,7 @@
 
 ## What MetaKitchen Provides
 
-MetaKitchen is a starting point, not a framework. It gives you:
+MetaKitchen is a scaffold, not a framework. It gives you:
 
 - **A folder structure** — `metak-orchestrator/` for coordination, `metak-shared/` for cross-repo context, and placeholders for your sub-repos.
 - **Agent pointer files** — every major AI coding agent has its own config file convention (`.claude/CLAUDE.md`, `.cursor/rules/README.mdc`, `.windsurfrules`, etc.). MetaKitchen pre-wires all of them to point at a single `AGENTS.md`, so whichever agent a developer uses, it reads the same instructions.
@@ -12,26 +12,78 @@ The goal is that any agent, on any machine, opened in any sub-repo, automaticall
 
 ## Prerequisites
 
-- **VS Code** (or VS Code Insiders) with an AI coding agent extension
+- **Python 3.7+** — for the `metak` CLI (no extra packages needed)
 - **Git** — each sub-repo is its own git repository
-- **Python 3.7+** — for the `metak.py` helper script (no extra packages needed)
+- **VS Code** (or VS Code Insiders) with an AI coding agent extension (recommended)
 
-## Getting Started
+## Installation
 
-1. Fork or clone this repository to start a new project.
-2. Open `meta.code-workspace` in VS Code — never open individual folders. This gives you:
-   - All repos visible in the Explorer sidebar
-   - Independent git tracking per repo
-   - Unified search across all codebases
-   - Shared settings and launch configs
-3. Add sub-repos as git submodules (see [Adding a Sub-Repo](#adding-a-sub-repo) below).
-4. Adapt `AGENTS.md` to your project — describe your actual repo structure, team rules, and coding standards. Fill in `metak-shared/architecture.md`, `metak-shared/coding-standards.md`, and `metak-shared/glossary.md` as your project takes shape.
+### One-time setup
+
+Clone the MetaKitchen repository and run setup:
+
+```bash
+git clone https://github.com/pfriedrich/metakitchen.git
+cd metakitchen
+metak setup
+```
+
+This does two things:
+1. Sets the `METAK_HOME` environment variable pointing to the MetaKitchen repo.
+2. Adds the MetaKitchen directory to your PATH so `metak` is available everywhere.
+
+On Windows this uses `setx` and the registry. On macOS/Linux it appends to your shell profile (`.zshrc` or `.bashrc`). You may need to restart your terminal for the changes to take effect.
+
+### Initialize a project
+
+Navigate to your project's root directory and run:
+
+```bash
+cd my-project
+metak install
+```
+
+This copies the MetaKitchen template into your project:
+- Agent pointer files (`.claude/CLAUDE.md`, `.cursor/rules/`, etc.)
+- `AGENTS.md` and `CUSTOM.md`
+- `metak-shared/` with architecture, coding standards, and glossary templates
+- `metak-orchestrator/` with task and status tracking
+- `meta.code-workspace` for VS Code multi-root workspace
+- `GEMINI.md` and other agent-specific files
+
+Existing files are **not overwritten** unless you pass `--force`. `CUSTOM.md` files are **never overwritten**, even with `--force` — they are yours to customize.
+
+You can also install into a specific directory:
+
+```bash
+metak install /path/to/my-project
+```
+
+### Open the workspace
+
+```bash
+code meta.code-workspace
+```
+
+Always open the workspace file, not individual folders. This gives you:
+- All repos visible in the Explorer sidebar
+- Independent git tracking per repo
+- Unified search across all codebases
+- Shared settings and launch configs
+
+### Customize for your project
+
+1. Edit `AGENTS.md` to reflect your project's structure, rules, and coding standards.
+2. Fill in `metak-shared/architecture.md`, `metak-shared/coding-standards.md`, and `metak-shared/glossary.md` as your project takes shape.
+3. Edit `CUSTOM.md` for any project-wide preferences (tech stack, deployment targets, team conventions).
 
 ## Adding a Sub-Repo
 
-Each sub-repo is a git submodule — a separate git repository tracked at a fixed commit inside the meta-repo.
+MetaKitchen supports two project layouts: **submodules** (each repo is an independent git repository) and **monorepo** (all code lives in one git repository). The agent instructions, orchestration, and workspace features work identically in both — the only difference is how you manage git.
 
-### Add a new submodule
+### Option A: Submodule layout
+
+Each sub-repo is a git submodule — a separate git repository tracked at a fixed commit inside your project.
 
 ```bash
 git submodule add <repo-url> <folder-name>
@@ -39,34 +91,30 @@ git submodule add <repo-url> <folder-name>
 git submodule add https://github.com/your-org/frontend frontend
 ```
 
-This creates the folder, clones the repo into it, and registers it in `.gitmodules`. Then run `metak` to finish the setup:
+This creates the folder, clones the repo into it, and registers it in `.gitmodules`. Then run `metak add` to finish the setup:
 
 ```bash
-python metak.py frontend
+metak add frontend
 ```
 
-This will:
-- Add the folder to `meta.code-workspace` so it appears in the VS Code Explorer sidebar
-- Create a starter `AGENTS.md` in the folder if one doesn't already exist
-
-Then commit everything:
+Commit everything:
 
 ```bash
 git add .gitmodules frontend meta.code-workspace
 git commit -m "chore: add frontend submodule"
 ```
 
-### Clone the meta-repo with submodules
+#### Submodule operations
 
-Anyone cloning the meta-repo needs to initialise submodules too:
+Clone a project with submodules:
 
 ```bash
-git clone --recurse-submodules <meta-repo-url>
+git clone --recurse-submodules <project-url>
 # or, if already cloned:
 git submodule update --init --recursive
 ```
 
-### Update a submodule to its latest commit
+Update a submodule to its latest commit:
 
 ```bash
 cd <folder-name>
@@ -76,7 +124,7 @@ git add <folder-name>
 git commit -m "chore: bump <folder-name> to latest"
 ```
 
-### Remove a submodule
+Remove a submodule:
 
 ```bash
 git submodule deinit -f <folder-name>
@@ -84,6 +132,29 @@ git rm <folder-name>
 rm -rf .git/modules/<folder-name>
 git commit -m "chore: remove <folder-name> submodule"
 ```
+
+### Option B: Monorepo layout
+
+If all your code lives in a single git repository, just create the folder and register it:
+
+```bash
+mkdir backend
+metak add backend
+```
+
+That's it. No submodule commands needed. Git tracks everything in one repository, and `metak add` handles the workspace registration and `AGENTS.md` scaffolding the same way.
+
+This works well when:
+- You want a single commit history across all services
+- Your CI/CD already handles a monorepo
+- You don't need independent version control per service
+
+### What `metak add` does
+
+Regardless of layout, `metak add <folder>` will:
+- Add the folder to `meta.code-workspace` so it appears in the VS Code Explorer sidebar
+- Create a starter `AGENTS.md` in the folder if one doesn't already exist
+- Create a `CUSTOM.md` for repo-specific instructions
 
 ## Workflows
 
@@ -124,4 +195,22 @@ For changes isolated to one repo, skip the orchestrator. Open an agent terminal 
 
 1. Make changes to `metak-shared/` yourself or have the orchestrator propose them for your review.
 2. Notify relevant agents by updating `TASKS.md` or mentioning the change in your next interaction.
-3. Never let a worker agent modify `shared/` without explicit approval.
+3. Never let a worker agent modify `metak-shared/` without explicit approval.
+
+## Updating MetaKitchen
+
+To get the latest MetaKitchen templates and tooling:
+
+```bash
+cd $METAK_HOME    # or wherever you cloned metakitchen
+git pull
+```
+
+Then re-install in any project you want to update:
+
+```bash
+cd my-project
+metak install --force
+```
+
+This updates all template files while preserving your `CUSTOM.md` files.

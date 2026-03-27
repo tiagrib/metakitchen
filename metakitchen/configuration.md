@@ -40,6 +40,6 @@ Add sub-repos to the `folders` array so VS Code includes them in the multi-root 
 }
 ```
 
-Sub-repos should be added as git submodules, not plain folders — see [Adding a Sub-Repo](usage.md#adding-a-sub-repo) in the usage guide.
+Sub-repos should be added as git submodules, not plain folders — see [Adding a Sub-Repo](usage.md#adding-a-sub-repo) in the usage guide. The `metak add` command handles this for you.
 
 Workspace-level settings, extension recommendations, and launch configs live here too.
