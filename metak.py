@@ -96,6 +96,7 @@ PROTECTED_FILES = {
 # ---------------------------------------------------------------------------
 AGENTS_MD_TEMPLATE_FILE = "metak-shared/templates/AGENTS.md.template"
 CUSTOM_MD_TEMPLATE_FILE = "metak-shared/templates/CUSTOM.md.template"
+CLAUDE_MD_WORKER_TEMPLATE_FILE = "metak-shared/templates/CLAUDE.md.worker.template"
 
 # Inline fallback used when the template file doesn't exist
 AGENTS_MD_TEMPLATE_FALLBACK = """\
@@ -134,6 +135,26 @@ CUSTOM_MD_TEMPLATE_FALLBACK = """\
 <!-- Add your custom instructions for {name} here. -->
 """
 
+CLAUDE_MD_WORKER_TEMPLATE_FALLBACK = """\
+You are a **worker** agent operating within the `{name}/` subfolder.
+
+## Before starting work
+
+1. Read `AGENTS.md` in this directory if it exists, for repo-specific instructions.
+2. Read `CUSTOM.md` in this directory for project-specific rules set by the orchestrator.
+3. Read your task assignment — the orchestrator will have provided it, or you can find it in `{metak_orchestrator_rel}/TASKS.md`.
+4. Consult `{metak_shared_rel}/api-contracts/` for interface specs you must conform to.
+5. Consult `{metak_shared_rel}/architecture.md` for system boundaries.
+
+## Rules
+
+- Stay within `{name}/`. Do not modify files outside this directory.
+- Treat `{metak_shared_rel}/` as **read-only**.
+- Never import directly from another repo's source code — use the contracts in `metak-shared/api-contracts/`.
+- When done or blocked, update `{metak_orchestrator_rel}/STATUS.md`.
+- Follow coding standards in `{metak_shared_rel}/coding-standards.md`.
+"""
+
 
 def _load_custom_template(root):
     """Load the CUSTOM.md template from the project, falling back to the inline default."""
@@ -141,6 +162,14 @@ def _load_custom_template(root):
     if template_path.exists():
         return template_path.read_text(encoding="utf-8")
     return CUSTOM_MD_TEMPLATE_FALLBACK
+
+
+def _load_claude_worker_template(root):
+    """Load the .claude/CLAUDE.md worker template, falling back to the inline default."""
+    template_path = root / CLAUDE_MD_WORKER_TEMPLATE_FILE
+    if template_path.exists():
+        return template_path.read_text(encoding="utf-8")
+    return CLAUDE_MD_WORKER_TEMPLATE_FALLBACK
 
 
 # ===================================================================
@@ -474,6 +503,11 @@ def cmd_add(args):
     else:
         print("  [=] {}/CUSTOM.md already exists, skipping".format(folder_name))
 
+    if scaffold_claude_md(folder_path, folder_name, root):
+        print("  [+] Created {}/.claude/CLAUDE.md".format(folder_name))
+    else:
+        print("  [=] {}/.claude/CLAUDE.md already exists, skipping".format(folder_name))
+
     print()
     print("Done. Open {} in VS Code.".format(workspace_path.name))
 
@@ -533,6 +567,33 @@ def scaffold_custom_md(folder_path, folder_name, root):
     template = _load_custom_template(root)
     target.write_text(
         template.format(name=folder_name),
+        encoding="utf-8",
+    )
+    return True
+
+
+def scaffold_claude_md(folder_path, folder_name, root):
+    """Create .claude/CLAUDE.md with worker identity in a sub-repo folder."""
+    target = folder_path / ".claude" / "CLAUDE.md"
+    if target.exists():
+        return False
+    # Compute relative paths from the sub-repo to metak-shared and metak-orchestrator
+    try:
+        rel = folder_path.relative_to(root)
+        depth = len(rel.parts)
+    except ValueError:
+        depth = 1
+    prefix = "/".join([".."] * depth)
+    metak_shared_rel = prefix + "/metak-shared"
+    metak_orchestrator_rel = prefix + "/metak-orchestrator"
+    template = _load_claude_worker_template(root)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        template.format(
+            name=folder_name,
+            metak_shared_rel=metak_shared_rel,
+            metak_orchestrator_rel=metak_orchestrator_rel,
+        ),
         encoding="utf-8",
     )
     return True

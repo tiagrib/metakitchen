@@ -44,10 +44,10 @@ metak install
 ```
 
 This copies the MetaKitchen template into your project:
-- Agent pointer files (`.claude/CLAUDE.md`, `.cursor/rules/`, etc.)
+- Agent pointer files (`.claude/CLAUDE.md` with role routing, `.cursor/rules/`, etc.)
 - `AGENTS.md` and `CUSTOM.md`
-- `metak-shared/` with architecture, coding standards, and glossary templates
-- `metak-orchestrator/` with task and status tracking
+- `metak-shared/` with overview, architecture, api-contracts, coding standards, glossary, and LEARNED.md templates
+- `metak-orchestrator/` with TASKS.md, STATUS.md, EPICS.md, DECISIONS.md, and orchestrator CLAUDE.md
 - `meta.code-workspace` for VS Code multi-root workspace
 - `GEMINI.md` and other agent-specific files
 
@@ -74,8 +74,9 @@ Always open the workspace file, not individual folders. This gives you:
 ### Customize for your project
 
 1. Edit `AGENTS.md` to reflect your project's structure, rules, and coding standards.
-2. Fill in `metak-shared/architecture.md`, `metak-shared/coding-standards.md`, and `metak-shared/glossary.md` as your project takes shape.
+2. Fill in `metak-shared/overview.md`, `metak-shared/architecture.md`, `metak-shared/coding-standards.md`, and `metak-shared/glossary.md` as your project takes shape.
 3. Edit `CUSTOM.md` for any project-wide preferences (tech stack, deployment targets, team conventions).
+4. Define API contracts in `metak-shared/api-contracts/` (one file per contract) as your system's interfaces become clear.
 
 ## Adding a Sub-Repo
 
@@ -155,6 +156,7 @@ Regardless of layout, `metak add <folder>` will:
 - Add the folder to `meta.code-workspace` so it appears in the VS Code Explorer sidebar
 - Create a starter `AGENTS.md` in the folder if one doesn't already exist
 - Create a `CUSTOM.md` for repo-specific instructions
+- Create a `.claude/CLAUDE.md` with worker identity (scoped to that folder, with correct relative paths to metak-shared and metak-orchestrator)
 
 ## Workflows
 

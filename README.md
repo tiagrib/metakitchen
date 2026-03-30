@@ -10,13 +10,22 @@ MetaKitchen solves this by giving every agent a single entry point (`AGENTS.md`)
 
 The name combines **meta-programming** with **kitchen orchestration** — a head chef (the orchestrator agent) directs multiple cooks (worker agents), each responsible for a different part of the meal, all following the same recipes.
 
+## Who This Is For
+
+MetaKitchen is for developers and teams who use AI coding agents as part of their daily workflow — especially those working across multiple repositories or with multiple agents. If you've ever wished your agent already knew your project's architecture, coding standards, and how the repos fit together, this is for you. No AI or prompt engineering experience required — just edit markdown files.
+
+## What This Is Not
+
+MetaKitchen is not an agent tailored for any specific language, framework, or domain. It does not know about your frontend, backend, database, or deployment pipeline. It is a **bootstrap** — a starting structure and set of conventions on which you build your own project-specific agent instructions. You fill in the architecture, coding standards, API contracts, and custom rules that make it yours.
+
 ## What You Get
 
 - **Agent pointer files** for 9 AI coding agents (Claude Code, Cursor, GitHub Copilot, Codex CLI, Cline, Roo Code, Junie, Windsurf, Gemini CLI) — all pointing at one `AGENTS.md`.
-- **`metak-shared/`** — read-only shared context: architecture docs, coding standards, API contracts, and a domain glossary.
-- **`metak-orchestrator/`** — a workspace for a coordinating agent that plans work across repos and spawns worker agents.
+- **Role routing** — `.claude/CLAUDE.md` at the root automatically selects orchestrator or worker role based on task scope. Per-repo `.claude/CLAUDE.md` files declare worker identity.
+- **`metak-shared/`** — read-only shared context: project overview, architecture docs, API contracts, coding standards, glossary, and a LEARNED.md for discovered methods.
+- **`metak-orchestrator/`** — a workspace for a coordinating agent with TASKS.md, STATUS.md, EPICS.md, and DECISIONS.md.
 - **`meta.code-workspace`** — a VS Code multi-root workspace so all repos appear in one sidebar.
-- **`CUSTOM.md`** files for project-specific instructions that won't be overwritten by updates.
+- **`CUSTOM.md`** files for project-specific instructions that won't be overwritten by updates. The orchestrator writes these to configure workers.
 - **Updates to the template** — as contributors add improvements to the scaffold code, they can be pulled into existing projects without overwriting custom instructions.
 
 
@@ -66,7 +75,7 @@ metak add backend
 
 You can also have a mix of both — for example, folders for separate services that are part of the same repo as your workspace, and submodules for external dependencies or other components.
 
-Either way, `metak add` registers each folder in `meta.code-workspace` and scaffolds a starter `AGENTS.md` inside it. See [Usage](metakitchen/usage.md) for details on both layouts.
+Either way, `metak add` registers each folder in `meta.code-workspace`, scaffolds a starter `AGENTS.md`, `CUSTOM.md`, and `.claude/CLAUDE.md` (with worker identity) inside it. See [Usage](metakitchen/usage.md) for details on both layouts.
 
 ### 4. Open the workspace
 
@@ -89,7 +98,7 @@ If your agent doesn't support subagent spawning, the orchestrator will tell you 
 | `metak setup` | Set `METAK_HOME` and add to PATH (one-time) |
 | `metak install [target]` | Copy MetaKitchen template into a project directory |
 | `metak uninstall [target]` | Remove MetaKitchen files from a project directory |
-| `metak add <folder>` | Register a sub-repo in the workspace and scaffold its `AGENTS.md` |
+| `metak add <folder>` | Register a sub-repo in the workspace and scaffold its `AGENTS.md`, `CUSTOM.md`, and `.claude/CLAUDE.md` |
 
 ## Documentation
 

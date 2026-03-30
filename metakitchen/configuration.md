@@ -22,9 +22,9 @@ Each AI agent has its own config file convention. MetaKitchen includes a minimal
 | Windsurf | `.windsurfrules` | Partial (user-initiated only) |
 | Gemini CLI | `GEMINI.md` | Experimental |
 
-Each pointer file contains a single line directing the agent to `AGENTS.md`. This keeps instructions in one place while ensuring every agent finds them through its native discovery mechanism.
+Every pointer file contains **role-routing logic** — it directs the agent to `AGENTS.md`, determines whether the agent acts as orchestrator or worker based on the scope of the request, and lists the shared knowledge files. Per-repo `.claude/CLAUDE.md` files (created by `metak add`) declare the worker identity for that sub-repo.
 
-You don't need to touch these files — just keep `AGENTS.md` up to date.
+You don't need to touch the pointer files — just keep `AGENTS.md` up to date. The role selection logic is pre-configured in all of them.
 
 ## `meta.code-workspace`
 
@@ -40,6 +40,6 @@ Add sub-repos to the `folders` array so VS Code includes them in the multi-root 
 }
 ```
 
-Sub-repos should be added as git submodules, not plain folders — see [Adding a Sub-Repo](usage.md#adding-a-sub-repo) in the usage guide. The `metak add` command handles this for you.
+Sub-repos can be added as git submodules or plain folders (monorepo) — see [Adding a Sub-Repo](usage.md#adding-a-sub-repo) in the usage guide. The `metak add` command handles this for you.
 
 Workspace-level settings, extension recommendations, and launch configs live here too.
