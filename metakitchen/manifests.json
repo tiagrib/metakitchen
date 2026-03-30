@@ -1,0 +1,25 @@
+[
+  {
+    "version": "0.1.0",
+    "files": [
+      "AGENTS.md",
+      "CUSTOM.md",
+      "GEMINI.md",
+      ".clinerules",
+      ".windsurfrules",
+      ".gitignore",
+      ".claude/CLAUDE.md",
+      ".cursor/rules/README.mdc",
+      ".amazonq/rules/README.md",
+      ".github/copilot-instructions.md",
+      ".junie/guidelines.md",
+      ".roo/rules/README.md",
+      ".vscode/launch.json",
+      "meta.code-workspace"
+    ],
+    "dirs": [
+      "metak-shared",
+      "metak-orchestrator"
+    ]
+  }
+]

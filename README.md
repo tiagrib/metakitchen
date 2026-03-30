@@ -88,6 +88,7 @@ If your agent doesn't support subagent spawning, the orchestrator will tell you 
 |---|---|
 | `metak setup` | Set `METAK_HOME` and add to PATH (one-time) |
 | `metak install [target]` | Copy MetaKitchen template into a project directory |
+| `metak uninstall [target]` | Remove MetaKitchen files from a project directory |
 | `metak add <folder>` | Register a sub-repo in the workspace and scaffold its `AGENTS.md` |
 
 ## Documentation

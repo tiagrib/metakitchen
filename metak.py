@@ -4,8 +4,9 @@ metak - MetaKitchen CLI
 
 Commands:
     metak setup              Set METAK_HOME env var and add to PATH (one-time)
-    metak install             Initialize MetaKitchen template in the current directory
-    metak add <folder>        Register a sub-repo in the workspace and scaffold AGENTS.md
+    metak install            Initialize MetaKitchen template in the current directory
+    metak uninstall          Remove MetaKitchen files from the current directory
+    metak add <folder>       Register a sub-repo in the workspace and scaffold AGENTS.md
 
 Prerequisites:
     - Python 3.7+
@@ -15,6 +16,7 @@ Examples:
     metak setup
     cd my-project && metak install
     metak add frontend
+    metak uninstall
 """
 
 import argparse
@@ -329,6 +331,107 @@ def cmd_install(args):
 
 
 # ===================================================================
+# uninstall command
+# ===================================================================
+MANIFESTS_FILE = "metakitchen/manifests.json"
+
+
+def _load_all_known_paths():
+    """Load all file and directory paths from every manifest version.
+
+    Returns (files, dirs) where each is a set of relative path strings.
+    """
+    manifests_path = METAK_HOME / MANIFESTS_FILE
+    if not manifests_path.exists():
+        # Fall back to current TEMPLATE_FILES / TEMPLATE_DIRS
+        return set(TEMPLATE_FILES), set(TEMPLATE_DIRS)
+
+    data = json.loads(manifests_path.read_text(encoding="utf-8"))
+    all_files = set()
+    all_dirs = set()
+    for entry in data:
+        all_files.update(entry.get("files", []))
+        all_dirs.update(entry.get("dirs", []))
+    return all_files, all_dirs
+
+
+def cmd_uninstall(args):
+    """Remove MetaKitchen files from the current (or specified) directory."""
+    target = Path(args.target).resolve()
+
+    if not target.exists():
+        print("Error: target directory '{}' does not exist.".format(target))
+        sys.exit(1)
+
+    if target == METAK_HOME:
+        print("Error: cannot uninstall from the MetaKitchen repo itself.")
+        sys.exit(1)
+
+    all_files, all_dirs = _load_all_known_paths()
+
+    # Also pick up any *.code-workspace files (name may vary per project)
+    for ws in target.glob("*.code-workspace"):
+        all_files.add(str(ws.relative_to(target)))
+
+    # Build lists of what actually exists in the target
+    files_to_remove = []
+    dirs_to_remove = []
+
+    for rel in sorted(all_files):
+        p = target / rel
+        if p.exists():
+            files_to_remove.append(rel)
+
+    for rel in sorted(all_dirs):
+        p = target / rel
+        if p.is_dir():
+            dirs_to_remove.append(rel)
+
+    if not files_to_remove and not dirs_to_remove:
+        print("No MetaKitchen files found in: {}".format(target))
+        return
+
+    # Show what will be removed
+    print("The following MetaKitchen files will be removed from: {}".format(target))
+    print()
+    for rel in files_to_remove:
+        print("  [-] {}".format(rel))
+    for rel in dirs_to_remove:
+        print("  [-] {}/  (entire directory)".format(rel))
+    print()
+
+    if not args.force:
+        print("Run with --force to confirm removal.")
+        return
+
+    # Remove files
+    removed = 0
+    for rel in files_to_remove:
+        p = target / rel
+        p.unlink()
+        removed += 1
+
+    # Clean up empty parent directories left behind by file removal
+    for rel in files_to_remove:
+        parent = (target / rel).parent
+        while parent != target:
+            try:
+                parent.rmdir()  # only succeeds if empty
+            except OSError:
+                break
+            parent = parent.parent
+
+    # Remove directories
+    for rel in dirs_to_remove:
+        p = target / rel
+        if p.is_dir():
+            shutil.rmtree(str(p))
+            removed += 1
+
+    print("Done. Removed {} items.".format(removed))
+
+
+# ===================================================================
 # add command (original metak.py logic)
 # ===================================================================
 def cmd_add(args):
@@ -473,6 +576,23 @@ def main():
         help="Overwrite existing files",
     )
 
+    # -- uninstall --
+    p_uninstall = sub.add_parser(
+        "uninstall",
+        help="Remove MetaKitchen files from a directory",
+    )
+    p_uninstall.add_argument(
+        "target",
+        nargs="?",
+        default=".",
+        help="Target directory (default: current directory)",
+    )
+    p_uninstall.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Actually remove files (without this flag, only shows what would be removed)",
+    )
+
     # -- add --
     p_add = sub.add_parser(
         "add",
@@ -489,6 +609,8 @@ def main():
         cmd_setup(args)
     elif args.command == "install":
         cmd_install(args)
+    elif args.command == "uninstall":
+        cmd_uninstall(args)
     elif args.command == "add":
         cmd_add(args)
     else:
