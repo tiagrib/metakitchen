@@ -32,6 +32,93 @@ __version__ = "0.1.0"
 __author__ = "Tiago Ribeiro"
 __license__ = "MIT"
 
+# ---------------------------------------------------------------------------
+# Git helpers
+# ---------------------------------------------------------------------------
+def git_available():
+    """Return True if git is found on PATH."""
+    try:
+        subprocess.run(
+            ["git", "--version"],
+            capture_output=True, check=True,
+        )
+        return True
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return False
+
+
+def git_has_uncommitted(target):
+    """Return True if the working tree at *target* has uncommitted changes.
+
+    Only meaningful inside a git repository — returns False if *target*
+    is not tracked by git.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True, text=True, cwd=str(target),
+        )
+        return bool(result.stdout.strip())
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return False
+
+
+def git_commit_files(target, paths, message):
+    """Stage *paths* (relative to *target*) and commit with *message*.
+
+    Returns True on success, False on failure.
+    """
+    try:
+        subprocess.run(
+            ["git", "add", "--"] + [str(p) for p in paths],
+            check=True, cwd=str(target),
+        )
+        subprocess.run(
+            ["git", "commit", "-m", message],
+            check=True, cwd=str(target),
+        )
+        return True
+    except subprocess.CalledProcessError as exc:
+        print("Warning: git commit failed: {}".format(exc))
+        return False
+
+
+GIT_RECOMMENDED_MSG = (
+    "Git is highly recommended when using metak to ensure nondestructive changes."
+)
+
+
+def _check_git_or_warn():
+    """Warn if git is not available.  Used by `setup` and bare `metak`."""
+    if not git_available():
+        print("Warning: git is not available on PATH.")
+        print(GIT_RECOMMENDED_MSG)
+        print()
+
+
+def _check_git_or_exit(skip_git):
+    """Error and exit if git is not available, unless *skip_git* is True."""
+    if skip_git:
+        return
+    if not git_available():
+        print("Error: git is not available on PATH.")
+        print(GIT_RECOMMENDED_MSG)
+        print("Pass --skip-git to proceed without git.")
+        sys.exit(1)
+
+
+def _check_dirty_tree(target, skip_git, force):
+    """Warn about uncommitted changes.  Exits unless *skip_git* or *force*."""
+    if skip_git or force:
+        return
+    if git_has_uncommitted(target):
+        print("Warning: there are uncommitted changes in {}.".format(target))
+        print("Commit or stash your changes before running metak to avoid mixing")
+        print("your work with scaffold changes.")
+        print("Pass --force to proceed anyway, or --skip-git to skip all git checks.")
+        sys.exit(1)
+
+
 def _resolve_metak_home():
     """Resolve the MetaKitchen repo root.
 
@@ -183,6 +270,9 @@ def _load_claude_worker_template(root):
 # ===================================================================
 def cmd_setup(args):
     """Set METAK_HOME as a permanent user environment variable and add to PATH."""
+    if not args.skip_git:
+        _check_git_or_warn()
+
     if args.path:
         metak_home = str(Path(args.path).resolve())
     else:
@@ -282,7 +372,17 @@ def _setup_unix(metak_home):
 # ===================================================================
 def cmd_install(args):
     """Copy MetaKitchen template into the current (or specified) directory."""
+    skip_git = args.skip_git
+    commit = args.commit
     target = Path(args.target).resolve()
+
+    if commit and skip_git:
+        print("Error: --commit and --skip-git are mutually exclusive.")
+        print("--commit requires git to stage and commit files.")
+        sys.exit(1)
+
+    _check_git_or_exit(skip_git)
+    _check_dirty_tree(target, skip_git, args.force)
 
     if not target.exists():
         print("Error: target directory '{}' does not exist.".format(target))
@@ -297,6 +397,7 @@ def cmd_install(args):
 
     copied = 0
     skipped = 0
+    touched = []  # relative paths of files created/updated (for --commit)
 
     # Copy individual files
     for rel in TEMPLATE_FILES:
@@ -319,6 +420,7 @@ def cmd_install(args):
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(str(src), str(dst))
         print("  [+] {}".format(rel))
+        touched.append(rel)
         copied += 1
 
     # Copy template directories
@@ -357,6 +459,7 @@ def cmd_install(args):
             print("  [=] {} (protected, restored)".format(pf))
 
         print("  [+] {}/".format(rel))
+        touched.append(rel)
         copied += 1
 
     # Copy workspace file, renaming to match the target folder name
@@ -370,12 +473,20 @@ def cmd_install(args):
         else:
             shutil.copy2(str(ws_src), str(ws_dst))
             print("  [+] {}".format(ws_name))
+            touched.append(ws_name)
             copied += 1
 
     print()
     print("Done. {} copied, {} skipped.".format(copied, skipped))
     if skipped and not args.force:
         print("Use --force to overwrite existing files.")
+
+    if commit and touched:
+        print()
+        if git_commit_files(target, touched, "chore: add metakitchen scaffold"):
+            print("Committed: chore: add metakitchen scaffold")
+    elif commit and not touched:
+        print("Nothing to commit (no files were changed).")
 
 
 # ===================================================================
@@ -405,7 +516,11 @@ def _load_all_known_paths():
 
 def cmd_uninstall(args):
     """Remove MetaKitchen files from the current (or specified) directory."""
+    skip_git = args.skip_git
     target = Path(args.target).resolve()
+
+    _check_git_or_exit(skip_git)
+    _check_dirty_tree(target, skip_git, args.force)
 
     if not target.exists():
         print("Error: target directory '{}' does not exist.".format(target))
@@ -484,10 +599,20 @@ def cmd_uninstall(args):
 # ===================================================================
 def cmd_add(args):
     """Register a sub-repo folder in the workspace and scaffold AGENTS.md."""
+    skip_git = args.skip_git
+    commit = args.commit
     folder_name = args.folder.strip("/\\")
     force = args.force
     root = Path.cwd()
     folder_path = root / folder_name
+
+    if commit and force:
+        print("Error: --commit and --force are mutually exclusive.")
+        print("--commit requires a clean working tree and will not commit your own code.")
+        sys.exit(1)
+
+    _check_git_or_exit(skip_git)
+    _check_dirty_tree(root, skip_git, force)
 
     if not folder_path.exists():
         print("Error: '{}' does not exist.".format(folder_name))
@@ -501,6 +626,7 @@ def cmd_add(args):
         sys.exit(1)
 
     print("Initializing '{}'...".format(folder_name))
+    touched = []  # relative paths for --commit
 
     try:
         workspace_path = find_workspace_file(root)
@@ -510,28 +636,40 @@ def cmd_add(args):
 
     if add_to_workspace(workspace_path, folder_name):
         print("  [+] Added '{}' to {}".format(folder_name, workspace_path.name))
+        touched.append(str(workspace_path.relative_to(root)))
     else:
         print("  [=] '{}' already in {}".format(folder_name, workspace_path.name))
 
     if scaffold_agents_md(folder_path, folder_name, root, force=force):
         verb = "Replaced" if force else "Created"
         print("  [+] {} {}/AGENTS.md".format(verb, folder_name))
+        touched.append("{}/AGENTS.md".format(folder_name))
     else:
         print("  [=] {}/AGENTS.md already exists, skipping".format(folder_name))
 
     if scaffold_custom_md(folder_path, folder_name, root):
         print("  [+] Created {}/CUSTOM.md".format(folder_name))
+        touched.append("{}/CUSTOM.md".format(folder_name))
     else:
         print("  [=] {}/CUSTOM.md already exists, skipping (protected)".format(folder_name))
 
     if scaffold_claude_md(folder_path, folder_name, root, force=force):
         verb = "Replaced" if force else "Created"
         print("  [+] {} {}/.claude/CLAUDE.md".format(verb, folder_name))
+        touched.append("{}/.claude/CLAUDE.md".format(folder_name))
     else:
         print("  [=] {}/.claude/CLAUDE.md already exists, skipping".format(folder_name))
 
     print()
     print("Done. Open {} in VS Code.".format(workspace_path.name))
+
+    if commit and touched:
+        print()
+        msg = "chore: add {} sub-repo".format(folder_name)
+        if git_commit_files(root, touched, msg):
+            print("Committed: {}".format(msg))
+    elif commit and not touched:
+        print("Nothing to commit (no files were changed).")
 
 
 # ---------------------------------------------------------------------------
@@ -666,6 +804,11 @@ def main():
         "--path",
         help="Path to the MetaKitchen repo (auto-detected when running from the repo)",
     )
+    p_setup.add_argument(
+        "--skip-git",
+        action="store_true",
+        help="Suppress the git availability warning",
+    )
 
     # -- install --
     p_install = sub.add_parser(
@@ -682,6 +825,16 @@ def main():
         "--force", "-f",
         action="store_true",
         help="Overwrite existing files",
+    )
+    p_install.add_argument(
+        "--skip-git",
+        action="store_true",
+        help="Skip git availability and dirty-tree checks",
+    )
+    p_install.add_argument(
+        "--commit",
+        action="store_true",
+        help="Commit the scaffolded files (mutually exclusive with --skip-git)",
     )
 
     # -- uninstall --
@@ -700,6 +853,11 @@ def main():
         action="store_true",
         help="Actually remove files (without this flag, only shows what would be removed)",
     )
+    p_uninstall.add_argument(
+        "--skip-git",
+        action="store_true",
+        help="Skip git availability and dirty-tree checks",
+    )
 
     # -- add --
     p_add = sub.add_parser(
@@ -715,6 +873,16 @@ def main():
         action="store_true",
         help="Overwrite existing scaffold files (AGENTS.md, .claude/CLAUDE.md). CUSTOM.md is never overwritten.",
     )
+    p_add.add_argument(
+        "--skip-git",
+        action="store_true",
+        help="Skip git availability and dirty-tree checks",
+    )
+    p_add.add_argument(
+        "--commit",
+        action="store_true",
+        help="Commit the scaffolded files (mutually exclusive with --skip-git)",
+    )
 
     args = parser.parse_args()
 
@@ -727,6 +895,7 @@ def main():
     elif args.command == "add":
         cmd_add(args)
     else:
+        _check_git_or_warn()
         parser.print_help()
 
 

@@ -16,6 +16,15 @@ The goal is that any agent, on any machine, opened in any sub-repo, automaticall
 - **Git** — each sub-repo is its own git repository
 - **VS Code** (or VS Code Insiders) with an AI coding agent extension (recommended)
 
+## Git Integration
+
+Git is highly recommended when using metak to ensure nondestructive changes. The CLI checks for git at every step:
+
+- **`metak` (no args) and `metak setup`** — warn if git is not available.
+- **`metak install`, `metak add`, `metak uninstall`** — error and stop if git is not available. Pass `--skip-git` to proceed without git.
+- **Dirty-tree check** — before `install`, `add`, or `uninstall` modifies files, metak checks for uncommitted changes. If the working tree is dirty, it asks you to commit or stash first. Pass `--force` to bypass the warning, or `--skip-git` to skip all git checks.
+- **Auto-commit** — `metak install` and `metak add` accept `--commit` to automatically stage and commit only the files metak touched. `--commit` is mutually exclusive with `--skip-git` since it requires git to work.
+
 ## Installation
 
 ### One-time setup
@@ -38,6 +47,8 @@ If you're running `metak setup` from a different directory, pass `--path` to poi
 metak setup --path /path/to/metakitchen
 ```
 
+`metak setup` will warn if git is not found on your PATH. Pass `--skip-git` to suppress the warning.
+
 On Windows this uses `setx` and the registry. On macOS/Linux it appends to your shell profile (`.zshrc` or `.bashrc`). You may need to restart your terminal for the changes to take effect.
 
 ### Initialize a project
@@ -58,6 +69,26 @@ This copies the MetaKitchen template into your project:
 - `GEMINI.md` and other agent-specific files
 
 Existing files are **not overwritten** unless you pass `--force`. `CUSTOM.md` files are **never overwritten**, even with `--force` — they are yours to customize.
+
+To automatically commit the scaffolded files:
+
+```bash
+metak install --commit
+```
+
+This stages only the files metak created and commits them with the message `chore: add metakitchen scaffold`. `--commit` requires git and cannot be combined with `--skip-git`.
+
+Pass `--skip-git` to skip all git checks (availability and dirty-tree):
+
+```bash
+metak install --skip-git
+```
+
+You can also install into a specific directory:
+
+```bash
+metak install /path/to/my-project
+```
 
 ### Uninstall MetaKitchen from a project
 
@@ -81,10 +112,10 @@ metak uninstall /path/to/my-project --force
 
 This removes all template files, agent pointer files, `metak-shared/`, `metak-orchestrator/`, and the `.code-workspace` file. Empty parent directories are cleaned up automatically.
 
-You can also install into a specific directory:
+Pass `--skip-git` to skip git checks:
 
 ```bash
-metak install /path/to/my-project
+metak uninstall --force --skip-git
 ```
 
 ### Open the workspace
@@ -187,6 +218,20 @@ Regardless of layout, `metak add <folder>` will:
 - Create a `.claude/CLAUDE.md` with worker identity (scoped to that folder, with correct relative paths to metak-shared and metak-orchestrator)
 
 Pass `--force` to overwrite existing `AGENTS.md` and `.claude/CLAUDE.md` files (useful after a MetaKitchen update). `CUSTOM.md` is always protected and never overwritten, even with `--force`.
+
+To automatically commit the changes:
+
+```bash
+metak add frontend --commit
+```
+
+This stages only the files metak touched and commits them with the message `chore: add frontend sub-repo`. `--commit` requires git and cannot be combined with `--skip-git`.
+
+Pass `--skip-git` to skip all git checks:
+
+```bash
+metak add frontend --skip-git
+```
 
 ## Workflows
 
