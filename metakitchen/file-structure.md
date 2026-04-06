@@ -38,14 +38,14 @@ my-project/
 │   ├── EPICS.md                     ← high-level epic grouping
 │   └── DECISIONS.md                 ← decision log for choices made under uncertainty
 │
-├── repo-a/                          ← sub-repo (e.g. frontend)
+├── subfolder-a/                          ← sub-repo (e.g. frontend)
 │   ├── .git/
 │   ├── .claude/CLAUDE.md            ← worker identity for this repo
 │   ├── AGENTS.md                    ← repo-specific agent instructions
 │   ├── CUSTOM.md                    ← repo-specific custom instructions
 │   └── ...
 │
-├── repo-b/                          ← sub-repo (e.g. backend)
+├── subfolder-b/                          ← sub-repo (e.g. backend)
 │   ├── .git/
 │   ├── .claude/CLAUDE.md
 │   ├── AGENTS.md

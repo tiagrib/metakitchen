@@ -1,3 +1,6 @@
 .claude/settings.local.json
 /__pycache__
 /metakitchen.egg-info
+/dist
+/build
+*.egg-info

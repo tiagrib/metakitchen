@@ -38,6 +38,11 @@ The instructions below have been tested in Windows 10/11. If you are on a differ
 
 Please contribute back any OS-specific instructions you find to the documentation!
 
+### Prerequisites
+- **Python 3.7+** — for the `metak` CLI (no extra packages needed)
+- **Git** — each sub-repo is its own git repository
+- **VS Code** (recommended) — for the multi-root workspace experience
+
 ### 1. Install MetaKitchen (one-time)
 
 Clone this repo and run setup:

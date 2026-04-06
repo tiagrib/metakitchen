@@ -519,11 +519,10 @@ def cmd_add(args):
     else:
         print("  [=] {}/AGENTS.md already exists, skipping".format(folder_name))
 
-    if scaffold_custom_md(folder_path, folder_name, root, force=force):
-        verb = "Replaced" if force else "Created"
-        print("  [+] {} {}/CUSTOM.md".format(verb, folder_name))
+    if scaffold_custom_md(folder_path, folder_name, root):
+        print("  [+] Created {}/CUSTOM.md".format(folder_name))
     else:
-        print("  [=] {}/CUSTOM.md already exists, skipping".format(folder_name))
+        print("  [=] {}/CUSTOM.md already exists, skipping (protected)".format(folder_name))
 
     if scaffold_claude_md(folder_path, folder_name, root, force=force):
         verb = "Replaced" if force else "Created"

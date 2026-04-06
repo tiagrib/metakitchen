@@ -17,7 +17,9 @@ meta-repo/
 │   ├── glossary.md                  ← domain terms
 │   └── LEARNED.md                   ← discovered methods and tricks
 ├── metak-orchestrator/              ← orchestrator workspace (TASKS.md, STATUS.md, EPICS.md)
-├── repo-*/                          ← application sub-repos
+├── <subfolder..>*/                  ← application sub-repos with subagent
+├── <subfolder..>*/                  ← application sub-repos with subagent
+├── <...>*/
 └── <project>.code-workspace         ← VS Code multi-root workspace
 ```
 
