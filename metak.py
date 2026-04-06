@@ -28,6 +28,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+__version__ = "0.1.0"
+__author__ = "Tiago Ribeiro"
+__license__ = "MIT"
+
 def _resolve_metak_home():
     """Resolve the MetaKitchen repo root.
 
@@ -481,6 +485,7 @@ def cmd_uninstall(args):
 def cmd_add(args):
     """Register a sub-repo folder in the workspace and scaffold AGENTS.md."""
     folder_name = args.folder.strip("/\\")
+    force = args.force
     root = Path.cwd()
     folder_path = root / folder_name
 
@@ -508,18 +513,21 @@ def cmd_add(args):
     else:
         print("  [=] '{}' already in {}".format(folder_name, workspace_path.name))
 
-    if scaffold_agents_md(folder_path, folder_name, root):
-        print("  [+] Created {}/AGENTS.md".format(folder_name))
+    if scaffold_agents_md(folder_path, folder_name, root, force=force):
+        verb = "Replaced" if force else "Created"
+        print("  [+] {} {}/AGENTS.md".format(verb, folder_name))
     else:
         print("  [=] {}/AGENTS.md already exists, skipping".format(folder_name))
 
-    if scaffold_custom_md(folder_path, folder_name, root):
-        print("  [+] Created {}/CUSTOM.md".format(folder_name))
+    if scaffold_custom_md(folder_path, folder_name, root, force=force):
+        verb = "Replaced" if force else "Created"
+        print("  [+] {} {}/CUSTOM.md".format(verb, folder_name))
     else:
         print("  [=] {}/CUSTOM.md already exists, skipping".format(folder_name))
 
-    if scaffold_claude_md(folder_path, folder_name, root):
-        print("  [+] Created {}/.claude/CLAUDE.md".format(folder_name))
+    if scaffold_claude_md(folder_path, folder_name, root, force=force):
+        verb = "Replaced" if force else "Created"
+        print("  [+] {} {}/.claude/CLAUDE.md".format(verb, folder_name))
     else:
         print("  [=] {}/.claude/CLAUDE.md already exists, skipping".format(folder_name))
 
@@ -545,9 +553,34 @@ def find_workspace_file(root):
     return matches[0]
 
 
+def _strip_jsonc(text):
+    """Strip comments and trailing commas so strict JSON can parse VS Code JSONC files."""
+    import re
+    # Tokenize: match strings, single-line comments, block comments, or other chars.
+    # This ensures we never modify content inside quoted strings.
+    token_re = re.compile(
+        r'"(?:[^"\\]|\\.)*"'   # double-quoted string
+        r"|'(?:[^'\\]|\\.)*'"  # single-quoted string
+        r'|//[^\n]*'           # single-line comment
+        r'|/\*.*?\*/'          # block comment
+        r'|[^"\'/]+',          # everything else
+        re.DOTALL,
+    )
+    result = []
+    for m in token_re.finditer(text):
+        tok = m.group()
+        if tok.startswith('//') or tok.startswith('/*'):
+            continue  # drop comments
+        result.append(tok)
+    text = ''.join(result)
+    # Remove trailing commas before } or ]
+    text = re.sub(r',\s*([}\]])', r'\1', text)
+    return text
+
+
 def add_to_workspace(workspace_path, folder_name):
     text = workspace_path.read_text(encoding="utf-8")
-    workspace = json.loads(text)
+    workspace = json.loads(_strip_jsonc(text))
 
     folders = workspace.setdefault("folders", [])
     existing = {f.get("path") for f in folders}
@@ -563,9 +596,9 @@ def add_to_workspace(workspace_path, folder_name):
     return True
 
 
-def scaffold_agents_md(folder_path, folder_name, root):
+def scaffold_agents_md(folder_path, folder_name, root, *, force=False):
     target = folder_path / "AGENTS.md"
-    if target.exists():
+    if target.exists() and not force:
         return False
     template = _load_agents_template(root)
     target.write_text(
@@ -575,9 +608,9 @@ def scaffold_agents_md(folder_path, folder_name, root):
     return True
 
 
-def scaffold_custom_md(folder_path, folder_name, root):
+def scaffold_custom_md(folder_path, folder_name, root, *, force=False):
     target = folder_path / "CUSTOM.md"
-    if target.exists():
+    if target.exists() and not force:
         return False
     template = _load_custom_template(root)
     target.write_text(
@@ -587,10 +620,10 @@ def scaffold_custom_md(folder_path, folder_name, root):
     return True
 
 
-def scaffold_claude_md(folder_path, folder_name, root):
+def scaffold_claude_md(folder_path, folder_name, root, *, force=False):
     """Create .claude/CLAUDE.md with worker identity in a sub-repo folder."""
     target = folder_path / ".claude" / "CLAUDE.md"
-    if target.exists():
+    if target.exists() and not force:
         return False
     # Compute relative paths from the sub-repo to metak-shared and metak-orchestrator
     try:
@@ -677,6 +710,11 @@ def main():
     p_add.add_argument(
         "folder",
         help="Sub-repo folder name (relative to project root)",
+    )
+    p_add.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing scaffold files (AGENTS.md, CUSTOM.md, .claude/CLAUDE.md)",
     )
 
     args = parser.parse_args()
