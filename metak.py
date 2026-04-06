@@ -713,7 +713,7 @@ def main():
     p_add.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite existing scaffold files (AGENTS.md, CUSTOM.md, .claude/CLAUDE.md)",
+        help="Overwrite existing scaffold files (AGENTS.md, .claude/CLAUDE.md). CUSTOM.md is never overwritten.",
     )
 
     args = parser.parse_args()

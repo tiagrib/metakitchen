@@ -32,6 +32,12 @@ This does two things:
 1. Sets the `METAK_HOME` environment variable pointing to the MetaKitchen repo.
 2. Adds the MetaKitchen directory to your PATH so `metak` is available everywhere.
 
+If you're running `metak setup` from a different directory, pass `--path` to point at the MetaKitchen repo explicitly:
+
+```bash
+metak setup --path /path/to/metakitchen
+```
+
 On Windows this uses `setx` and the registry. On macOS/Linux it appends to your shell profile (`.zshrc` or `.bashrc`). You may need to restart your terminal for the changes to take effect.
 
 ### Initialize a project
@@ -52,6 +58,28 @@ This copies the MetaKitchen template into your project:
 - `GEMINI.md` and other agent-specific files
 
 Existing files are **not overwritten** unless you pass `--force`. `CUSTOM.md` files are **never overwritten**, even with `--force` — they are yours to customize.
+
+### Uninstall MetaKitchen from a project
+
+To remove all MetaKitchen files from a project, run:
+
+```bash
+metak uninstall
+```
+
+By default this is a **dry run** — it shows which files and directories would be removed without deleting anything. When you're satisfied with the preview, pass `--force` to actually remove them:
+
+```bash
+metak uninstall --force
+```
+
+You can also target a specific directory:
+
+```bash
+metak uninstall /path/to/my-project --force
+```
+
+This removes all template files, agent pointer files, `metak-shared/`, `metak-orchestrator/`, and the `.code-workspace` file. Empty parent directories are cleaned up automatically.
 
 You can also install into a specific directory:
 
@@ -157,6 +185,8 @@ Regardless of layout, `metak add <folder>` will:
 - Create a starter `AGENTS.md` in the folder if one doesn't already exist
 - Create a `CUSTOM.md` for repo-specific instructions
 - Create a `.claude/CLAUDE.md` with worker identity (scoped to that folder, with correct relative paths to metak-shared and metak-orchestrator)
+
+Pass `--force` to overwrite existing `AGENTS.md` and `.claude/CLAUDE.md` files (useful after a MetaKitchen update). `CUSTOM.md` is always protected and never overwritten, even with `--force`.
 
 ## Workflows
 
