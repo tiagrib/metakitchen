@@ -42,6 +42,7 @@ Please contribute back any OS-specific instructions you find to the documentatio
 - **Python 3.7+** — for the `metak` CLI (no extra packages needed)
 - **Git** — each sub-repo is its own git repository
 - **VS Code** (recommended) — for the multi-root workspace experience
+- **Claude Code CLI** (optional) — only needed for `metak feedback` (`npm install -g @anthropic-ai/claude-code`)
 
 ### 1. Install MetaKitchen (one-time)
 
@@ -107,6 +108,7 @@ If your agent doesn't support subagent spawning, the orchestrator will tell you 
 | `metak install [target]` | Copy MetaKitchen template into a project directory |
 | `metak uninstall [target]` | Remove MetaKitchen files from a project directory |
 | `metak add <folder>` | Register a sub-repo in the workspace and scaffold its `AGENTS.md`, `CUSTOM.md`, and `.claude/CLAUDE.md` |
+| `metak feedback [target]` | Analyze project customizations and suggest improvements for the main templates (requires Claude Code CLI) |
 
 ## Documentation
 
@@ -122,6 +124,7 @@ See the [metakitchen/](metakitchen/) folder for detailed guides:
 - **Python 3.7+** — for the `metak` CLI (no extra packages needed)
 - **Git** — each sub-repo is its own git repository
 - **VS Code** (recommended) — for the multi-root workspace experience
+- **Claude Code CLI** (optional) — required only for `metak feedback` (`npm install -g @anthropic-ai/claude-code`)
 
 ## License
 

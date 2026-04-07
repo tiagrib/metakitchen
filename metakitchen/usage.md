@@ -15,6 +15,7 @@ The goal is that any agent, on any machine, opened in any sub-repo, automaticall
 - **Python 3.7+** — for the `metak` CLI (no extra packages needed)
 - **Git** — each sub-repo is its own git repository
 - **VS Code** (or VS Code Insiders) with an AI coding agent extension (recommended)
+- **Claude Code CLI** (optional) — required only for `metak feedback` (`npm install -g @anthropic-ai/claude-code`)
 
 ## Git Integration
 
@@ -279,38 +280,81 @@ For changes isolated to one repo, skip the orchestrator. Open an agent terminal 
 
 After using MetaKitchen in a project for a while, you may find that some of your customizations — new agent rules, coding standards, learned tricks — are useful enough to be part of the default templates for all future projects.
 
-The `metak feedback` command analyzes your project's customizations and uses the Claude Code CLI to identify what's worth upstreaming:
+The `metak feedback` command analyzes your project's customizations and uses the Claude Code CLI to identify what's worth upstreaming into the main templates.
+
+### Prerequisites
+
+- **Git** — must be available on PATH
+- **METAK_HOME** — must have a clean working tree (commit or stash first, so any template updates are cleanly tracked)
+- **Claude Code CLI** — must be installed (`npm install -g @anthropic-ai/claude-code`)
+
+### Basic usage
 
 ```bash
 cd my-project
 metak feedback
 ```
 
-This will:
-1. Diff your `AGENTS.md` and `metak-orchestrator/AGENTS.md` against the originals in `METAK_HOME`
-2. Collect all `CUSTOM.md` files (root, orchestrator, sub-repos) that have real content
-3. Collect `metak-shared/LEARNED.md` entries
-4. Scan sub-repo `AGENTS.md` and `CUSTOM.md` files for additions beyond the template boilerplate
-5. Send everything to Claude CLI for analysis of what could improve the templates
+This runs a two-phase process:
 
-**Prerequisites:**
-- **Git** must be available
-- **METAK_HOME** must have a clean working tree (commit or stash first)
-- **Claude Code CLI** must be installed (`npm install -g @anthropic-ai/claude-code`)
+**Phase 1 — Analysis.** metak scans the project for customizations and sends them to Claude CLI (in non-interactive print mode) for analysis. Specifically, it:
 
-To preview the prompt without sending it to Claude:
+1. Diffs `AGENTS.md`, `metak-orchestrator/AGENTS.md`, and `metak-shared/coding-standards.md` against the originals in `METAK_HOME`
+2. Collects `CUSTOM.md` files (root, orchestrator, and all sub-repos) that have real content beyond the template placeholder
+3. Collects `metak-shared/LEARNED.md` if it has entries
+4. Collects sub-repo `AGENTS.md` files for additions beyond template boilerplate
+5. Sends everything to Claude CLI, which returns suggestions for what to upstream
+
+The analysis output is printed to the terminal and cached to `.metak-feedback-cache.md` in `METAK_HOME` (this file is gitignored).
+
+**Phase 2 — Apply.** After the analysis, metak asks:
+
+```
+Apply these suggestions to METAK_HOME templates? [y/N]
+```
+
+If you answer **y**, metak launches an interactive Claude Code session in the `METAK_HOME` directory with the analysis loaded as context. Claude will propose edits to the template files and wait for your approval on each change. You remain in control — review, approve, or reject each edit, then exit the session when done.
+
+If you answer **n** (or press Enter), the suggestions remain visible in the terminal for manual reference.
+
+### Flags
+
+**`--dry-run`** — Show the prompt that would be sent to Claude CLI without executing it. Useful for inspecting what data is being collected:
 
 ```bash
 metak feedback --dry-run
 ```
 
-You can also target a specific project directory:
+**`--cached`** — Skip the analysis phase and go straight to the apply prompt using the previously cached results. This avoids re-running the (slower) analysis when you've already reviewed the suggestions and want to apply them:
+
+```bash
+metak feedback --cached
+```
+
+If no cached feedback exists, the command exits with an error and instructs you to run `metak feedback` first.
+
+### Targeting a specific project
+
+You can point feedback at a project directory instead of using the current directory:
 
 ```bash
 metak feedback /path/to/my-project
 ```
 
-The command is read-only — it never modifies any files. After reviewing Claude's suggestions, you manually update the templates in `METAK_HOME`.
+### What gets compared
+
+| Source | Method | Rationale |
+|--------|--------|-----------|
+| `AGENTS.md` | Diff vs METAK_HOME original | Focuses on what the project actually changed |
+| `metak-orchestrator/AGENTS.md` | Diff vs original | Same — identifies orchestrator instruction changes |
+| `metak-shared/coding-standards.md` | Diff vs original | Catches added coding conventions |
+| `CUSTOM.md` (root) | Full content | No meaningful original — template is a placeholder |
+| `metak-orchestrator/CUSTOM.md` | Full content | Same |
+| `metak-shared/LEARNED.md` | Full content | Accumulated learnings worth reviewing for upstream |
+| Sub-repo `AGENTS.md` files | Full content | Generated from template — Claude is told to look beyond boilerplate |
+| Sub-repo `CUSTOM.md` files | Full content | Entirely user-written |
+
+Files that contain only the template placeholder text (headings and HTML comments with no real instructions) are skipped automatically.
 
 ## Updating MetaKitchen
 

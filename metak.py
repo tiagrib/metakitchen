@@ -20,6 +20,7 @@ Examples:
     metak add frontend
     metak feedback
     metak feedback --dry-run
+    metak feedback --cached
     metak uninstall
 """
 
