@@ -55,10 +55,28 @@ Worker agents operate within a single sub-repo. They:
 2. **One agent, one subfolder, one repo.** Workers do not work across multiple repos.
 3. **API contracts live in `metak-shared/api-contracts/`.** Always reference these for cross-component interfaces.
 4. **Consult `metak-shared/architecture.md`** for system boundaries and data flow.
+5. **Verify integration contracts.** After modifying an interface, verify the implementation matches the contract in `metak-shared/api-contracts/` exactly.
+6. **Check known deviations.** API contract files may list known bugs or deviations in an appendix — check before working against a contract.
 
 ## Coding Standards
 
 Follow `metak-shared/coding-standards.md` for your repo's language.
+
+## Project Structure
+
+- Maintain a description of the current project structure in `STRUCT.md` within each sub-repo
+- The structure should be a tree view with brief descriptions of each file and folder
+- If at any point `STRUCT.md` does not exist, pause your current task and create it by analyzing the project
+- Update `STRUCT.md` with every change to the project structure
+- Maintain a `TODO.md` file to track remaining tasks or improvements
+- One single-line entry per topic — no refinement or breakdown, just a note so nothing gets lost
+
+## When Stuck
+
+- Re-read the relevant `AGENTS.md`, `CUSTOM.md`, and `STRUCT.md` for context you may have missed
+- Check `metak-shared/LEARNED.md` for known pitfalls and solutions
+- Verify your assumptions against the running system, not documentation
+- If still blocked, update `metak-orchestrator/STATUS.md` with what you tried and what failed
 
 ## Custom Instructions
 
