@@ -7,6 +7,7 @@ Commands:
     metak install            Initialize MetaKitchen template in the current directory
     metak uninstall          Remove MetaKitchen files from the current directory
     metak add <folder>       Register a sub-repo in the workspace and scaffold AGENTS.md
+    metak diff               Show differences between metak templates and project files
     metak feedback           Analyze project customizations and suggest template improvements
     metak update             Pull latest templates and suggest project updates
 
@@ -1502,6 +1503,62 @@ def cmd_update(args):
 
 
 # ===================================================================
+# diff command
+# ===================================================================
+def cmd_diff(args):
+    """Show differences between METAK_HOME templates and project files."""
+    target = Path(args.target).resolve()
+    metak_home = _resolve_metak_home()
+
+    if not target.exists():
+        print("Error: target directory '{}' does not exist.".format(target))
+        sys.exit(1)
+
+    if target == metak_home:
+        print("Error: cannot diff the MetaKitchen repo against itself.")
+        sys.exit(1)
+
+    found_diffs = False
+    for rel_path in DIFFABLE_FILES:
+        template = metak_home / rel_path
+        project = target / rel_path
+        if not template.exists() or not project.exists():
+            continue
+
+        orig_lines = template.read_text(encoding="utf-8").splitlines()
+        proj_lines = project.read_text(encoding="utf-8").splitlines()
+
+        # Compute unified diff, ignoring whitespace-only changes
+        filtered_orig = [line.rstrip() for line in orig_lines]
+        filtered_proj = [line.rstrip() for line in proj_lines]
+
+        diff_lines = list(difflib.unified_diff(
+            filtered_orig, filtered_proj,
+            fromfile="metak/" + rel_path,
+            tofile="project/" + rel_path,
+            lineterm="",
+        ))
+
+        # Drop hunks that are only blank-line additions/removals
+        meaningful = [
+            line for line in diff_lines
+            if not (line.startswith(("---", "+++", "@@"))
+                    or line == "+"
+                    or line == "-"
+                    or line == " ")
+        ]
+        if not meaningful:
+            continue
+
+        found_diffs = True
+        print("\n".join(diff_lines))
+        print()
+
+    if not found_diffs:
+        print("No differences found.")
+
+
+# ===================================================================
 # CLI entry point
 # ===================================================================
 def main():
@@ -1601,6 +1658,18 @@ def main():
         help="Commit the scaffolded files (mutually exclusive with --skip-git)",
     )
 
+    # -- diff --
+    p_diff = sub.add_parser(
+        "diff",
+        help="Show differences between metak templates and project files",
+    )
+    p_diff.add_argument(
+        "target",
+        nargs="?",
+        default=".",
+        help="Target project directory (default: current directory)",
+    )
+
     # -- feedback --
     p_feedback = sub.add_parser(
         "feedback",
@@ -1660,6 +1729,8 @@ def main():
         cmd_uninstall(args)
     elif args.command == "add":
         cmd_add(args)
+    elif args.command == "diff":
+        cmd_diff(args)
     elif args.command == "feedback":
         cmd_feedback(args)
     elif args.command == "update":
