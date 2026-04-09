@@ -825,6 +825,7 @@ FEEDBACK_CACHE_FILE = ".metak-feedback-cache.md"
 
 # Files in the target project that can be diffed against their METAK_HOME originals.
 DIFFABLE_FILES = [
+    ".claude/CLAUDE.md",
     "AGENTS.md",
     "metak-orchestrator/AGENTS.md",
     "metak-shared/coding-standards.md",
@@ -1150,7 +1151,7 @@ def cmd_feedback(args):
     subrepo_folders = _get_workspace_subrepo_folders(target)
 
     for folder in subrepo_folders:
-        for filename in ("AGENTS.md", "CUSTOM.md"):
+        for filename in ("AGENTS.md", "CUSTOM.md", ".claude/CLAUDE.md"):
             path = target / folder / filename
             if path.exists():
                 content = path.read_text(encoding="utf-8")
@@ -1468,7 +1469,7 @@ def cmd_update(args):
     subrepo_folders = _get_workspace_subrepo_folders(target)
 
     for folder in subrepo_folders:
-        for filename in ("AGENTS.md", "CUSTOM.md"):
+        for filename in ("AGENTS.md", "CUSTOM.md", ".claude/CLAUDE.md"):
             path = target / folder / filename
             if path.exists():
                 content = path.read_text(encoding="utf-8")
