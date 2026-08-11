@@ -3,6 +3,13 @@
 Repo-specific agent instructions for `{name}`.
 Read the root `AGENTS.md` first for global rules, project structure, and coding standards.
 
+<!--
+  This file is scaffolding and may be regenerated. Durable, hand-written content
+  belongs in `CUSTOM.md`, which metak never overwrites. If you prefer, gitignore
+  this file and reduce it to a pointer at `CUSTOM.md` so nothing is lost on
+  regeneration.
+-->
+
 ## Repo Overview
 
 <!-- Describe what this repo does and its role in the system. -->
@@ -14,6 +21,41 @@ Read the root `AGENTS.md` first for global rules, project structure, and coding 
 3. Read your assignments from `metak-orchestrator/TASKS.md` and update `metak-orchestrator/STATUS.md` when done or blocked.
 4. Consult `metak-shared/LEARNED.md` for useful methods, procedures, and tricks discovered during the project. Add new learnings as you discover them.
 5. <!-- Add any repo-specific rules here. -->
+
+## Validation Checklist
+
+<!--
+  What must be true before work in this repo is "done". Scope per change type
+  (library change, service change, schema change, deploy). At minimum: lint clean,
+  tests clean, build clean, and one real execution of the changed path.
+  A change crossing a network, process, or deployment boundary needs a live
+  end-to-end run — mocked tests do not validate it.
+-->
+
+- [ ] Lint: `<command>`
+- [ ] Tests: `<command>` — record pass counts
+- [ ] Build: `<command>`
+- [ ] Live run of the changed path: `<command>` — paste the output in the completion report
+
+## Files You Should Not Edit Casually
+
+<!-- List this repo's protected files and why. Standard categories: -->
+
+- **Generated files** — <!-- name the regeneration command instead of hand-editing -->
+- **Vendored / third-party code** — re-generate or update upstream, do not refactor in place.
+- **Submodules** — read-only; changes go through the upstream repo.
+- **Applied migrations** — never edit a committed migration; add a new one.
+- **Lockfiles** — mutate only via the package manager; never add a second lockfile for a different package manager.
+- **Shared test doubles / fixtures** — changing them changes every consumer.
+
+## Files Yours to Maintain
+
+<!-- What workers in this repo are expected to keep current. -->
+
+- `STRUCT.md` — project structure tree, updated with every structural change.
+- `CUSTOM.md` — repo-specific standing rules.
+- `metak-shared/LEARNED.md` — add entries as you discover them.
+- <!-- Contracts, schemas, or docs this repo owns. -->
 
 ## Coding Standards
 

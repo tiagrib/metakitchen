@@ -74,10 +74,35 @@ For each task in `TASKS.md`, spawn a worker using the `Agent` tool:
 - Remind the worker to read relevant contracts from `metak-shared/api-contracts/`.
 - Instruct workers to write a completion report when done: what was implemented, what tests were run and their results, any deviations from the task spec, and any open concerns.
 - Workers should update `metak-orchestrator/STATUS.md` when done or blocked.
-- Spawn independent tasks in parallel.
+- Spawn independent tasks in parallel — see [Spawning Parallel Workers](#spawning-parallel-workers) for the isolation rules.
 - When spawning a task, always update the target repo's `CUSTOM.md` with any context the worker needs (dependencies, integration points, expected interfaces).
 
 If you cannot spawn subagents in the current context, tell the user which tasks to run manually and in which repo folder.
+
+### Spawning Parallel Workers
+
+If you spawn 2+ workers in the same message and there is **any** chance they touch the same file, pass `isolation: "worktree"` to each `Agent` call, then merge their branches sequentially yourself.
+
+Workers in one checkout share a single git index. Telling each worker to `git add` only its own paths does **not** prevent co-mingling: worker A's commit sweeps up whatever worker B has already staged. Per-path `git add` discipline is necessary but not sufficient.
+
+Alternatives, in order of preference:
+
+1. `isolation: "worktree"` — safe, costs one merge step.
+2. Sequential execution — safe, costs wall-clock. Prefer this when the task count is small or when worktrees are complicated (e.g. the tree contains submodules).
+3. Parallel in a shared tree — only when the workers' file trees are provably disjoint.
+
+**Verify afterwards:** run `git log --stat <starting-HEAD>..HEAD` and cross-check each commit's changed files against that worker's completion report. Files under the wrong attribution mean the index raced.
+
+### When Fixes Keep Regressing
+
+If the same feature has gone fix → regress → fix **three or more times**, stop dispatching patches. That pattern is a structural fault, not a worker-quality problem. Re-scope and diagnose instead. The usual causes:
+
+- **A runtime fork.** Two code paths behind an env flag or a single in-scope check serving the same user flow. Every fix lands on one side of the seam and the other drifts back. Prefer one path; feature-flag a *rollout* if you must, then collapse to one path once proven.
+- **A half-covered flow.** The new path handles one state of a multi-state flow, so anything multi-step straddles the boundary.
+- **Backward-compat with no beneficiary.** Deferral or reordering logic protecting "older clients" that do not exist is pure regression surface. Delete it.
+- **Tests that cannot see the seam.** If every dependency is mocked, the integration point where the bug lives has no coverage and green means nothing.
+
+Fixing the structure is in scope even if it means a rewrite.
 
 ## Custom Instructions
 

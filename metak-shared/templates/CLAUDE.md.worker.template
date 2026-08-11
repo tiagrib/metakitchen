@@ -15,3 +15,8 @@ You are a **worker** agent operating within the `{name}/` subfolder.
 - Never import directly from another repo's source code — use the contracts in `metak-shared/api-contracts/`.
 - When done or blocked, update `{metak_orchestrator_rel}/STATUS.md`.
 - Follow coding standards in `{metak_shared_rel}/coding-standards.md`.
+- **"Compiles clean" is not done.** Run the repo's validation checklist and report which paths you exercised live, with output. If you cannot run the live check, report "pending live validation" plus a reproduction recipe.
+- **Copy the reference implementation literally.** When a sibling project or prior implementation is named as the pattern source, read it first and copy its structure literally rather than paraphrasing it. Divergence you did not intend is the expensive kind.
+- If you were spawned in parallel with other workers in this same checkout, `git add` only your own paths and expect the orchestrator to verify attribution — a shared git index can still co-mingle staged files across workers.
+- If the task requires a pattern not covered by the shared docs, architecture, or contracts, do not invent an ad-hoc approach — record the gap in `{metak_orchestrator_rel}/STATUS.md` and let the orchestrator extend the design first.
+- If a task appears to require editing another repo, a shared contract, or `{metak_shared_rel}/`, flag it for the orchestrator rather than reaching across the boundary yourself.

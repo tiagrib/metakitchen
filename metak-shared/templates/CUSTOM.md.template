@@ -26,3 +26,20 @@
 ## Integration Contracts
 
 <!-- How this repo communicates with others. Reference metak-shared/api-contracts/ for message formats. -->
+
+## Environment & Secrets
+
+<!-- One row per variable. Say where the values come from in local dev vs deployed. -->
+
+| Variable | Required | Default | Purpose |
+| -------- | -------- | ------- | ------- |
+|          |          |         |         |
+
+Secrets live only in a gitignored env file or the deployment secret store — never in committed config, source, or docs. Commit a `.env.example`-style template with the key names and empty values. Never print a secret value in command output or logs.
+
+## Active Work
+
+<!--
+  Dated section pointing at the current epic and any rules specific to it.
+  Keep it short and delete it when the epic closes.
+-->
