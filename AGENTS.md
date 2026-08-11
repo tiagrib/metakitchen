@@ -40,11 +40,17 @@ See `metak-orchestrator/AGENTS.md` for full orchestrator instructions.
 
 ### Worker Agents
 
-Worker agents operate within a single sub-repo. They:
+Worker agents operate within a single sub-repo.
 
-- Read their assignment from the orchestrator (or `metak-orchestrator/TASKS.md`).
-- Read `AGENTS.md` and `CUSTOM.md` in their target directory for instructions.
-- Consult `metak-shared/api-contracts/` for interfaces they must conform to.
+Before starting, in order:
+1. Read `AGENTS.md` in your target directory (repo-specific instructions).
+2. Read `CUSTOM.md` in that directory (project-specific overrides from the orchestrator).
+3. Read your task assignment (from the orchestrator or `metak-orchestrator/TASKS.md`).
+4. Consult `metak-shared/api-contracts/` for interfaces you must conform to.
+5. Consult `metak-shared/architecture.md` for system boundaries.
+
+While working, they:
+
 - **Write a completion report** when done. Summarize what was implemented, what tests were run and their results, any deviations from the task spec, and any open concerns. Update `metak-orchestrator/STATUS.md` with this report.
 - **Treat `metak-shared/` as read-only.** Propose changes via the orchestrator.
 - **Document learnings** in `metak-shared/LEARNED.md`.
@@ -57,10 +63,17 @@ Worker agents operate within a single sub-repo. They:
 4. **Consult `metak-shared/architecture.md`** for system boundaries and data flow.
 5. **Verify integration contracts.** After modifying an interface, verify the implementation matches the contract in `metak-shared/api-contracts/` exactly.
 6. **Check known deviations.** API contract files may list known bugs or deviations in an appendix — check before working against a contract.
+7. **Vendored/submodule code is read-only.** Do not modify a git submodule or vendored upstream dependency unless your task explicitly targets it — it has its own change process upstream. Your project-specific code lives in this repo's own directories, not inside the vendored tree. If a change seems to require editing the submodule, flag it and stop.
 
 ## Coding Standards
 
 Follow `metak-shared/coding-standards.md` for your repo's language.
+
+## Cost Discipline for External Calls
+
+- Calls to paid or rate-limited services (LLM APIs, search, scraping, cloud services) cost money and cause flaky CI. Default all tests to mocks or fixture/replay.
+- Gate any test that makes a real call on the relevant env var (e.g. `*_API_KEY`) and have it **skip itself** when the var is unset — never fail.
+- Where a provider offers a dry-run/no-op mode, use it in tests that only assert on request shape.
 
 ## Project Structure
 
@@ -75,6 +88,8 @@ Follow `metak-shared/coding-standards.md` for your repo's language.
 - Check `metak-shared/LEARNED.md` for known pitfalls and solutions
 - Verify your assumptions against the running system, not documentation
 - If still blocked, update `metak-orchestrator/STATUS.md` with what you tried and what failed
+- If the task requires a pattern **not covered** by the shared docs / architecture / contracts, do not invent an ad-hoc approach. Record the gap in `metak-orchestrator/STATUS.md` and let the orchestrator extend the design first.
+- If a task appears to require editing another repo, a shared contract, or `metak-shared/`, flag it for the orchestrator rather than reaching across the boundary yourself.
 
 ## Custom Instructions
 
