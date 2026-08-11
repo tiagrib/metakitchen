@@ -15,6 +15,13 @@
 - **`status` vs `health` are different commands.** `status` reports the supervisor's view (is the unit running). `health` performs a real round-trip against the service and exits 0 = healthy / non-zero = unhealthy, so it is scriptable. A process can be "active" and still wedged — never report health from status.
 - Release and deploy commands refuse a dirty working tree by default so the artifact is reproducible from a committed SHA. Require an explicit `--allow-dirty` to override, and note it in the report.
 
+## Deliverables
+
+- A single-file deliverable meant to be opened from disk must inline its data (e.g. a
+  `window.DATA` global). `fetch()` and module imports are blocked on `file://`, so a
+  file that loads its data at runtime works on your dev server and is blank for the
+  person who opens it.
+
 ## Cross-Platform Text Output
 
 - Never regenerate a text file with PowerShell's `>` or `Out-File` / `Set-Content` without `-Encoding utf8`. Windows PowerShell 5.1 writes UTF-16 LE with BOM, which many linters and parsers reject while bundlers silently accept. Use a bash redirect, or `Out-File -Encoding utf8`.
